@@ -117,8 +117,50 @@ Prompt changed: True | Wakeup-related keywords: False
 \source{Generation-operator audit; parent--child prompt diff, Episode 1 (excerpt).}
 \end{frame}
 
+% 5. Answer fallback: existing safeguard and its limitation
+\begin{frame}[fragile]{05 \quad Answer fallback: activation is not submission}
+\small\textcolor{muted}{A safeguard after Deriver can activate Answer, but cannot force a final submission.}
+\begin{columns}[T,totalwidth=\textwidth]
+\column{0.49\textwidth}
+\textbf{Source code (abbreviated)}
+\begin{lstlisting}[basicstyle=\ttfamily\fontsize{7.2}{8.5}\selectfont]
+_WAKE_AFTER = {"deriver", "verifier"}
+_FALLBACK_AFTER = {"deriver"}
+
+if last_role not in _WAKE_AFTER:
+    return False
+
+llm_decision = super().match_wakeup_condition(env)
+if llm_decision:
+    return True
+if last_role in _FALLBACK_AFTER:
+    return True  # LLM said NO
+return False
+\end{lstlisting}
+\column{0.49\textwidth}
+\textbf{Potential failure sequence}
+\begin{lstlisting}[basicstyle=\ttfamily\fontsize{7.2}{8.5}\selectfont]
+Deriver contributes
+       v
+Answer NO -> fallback YES
+       v
+Answer emits <step> only
+       v
+Next turn: Answer blocked
+Other agents also say NO
+       v
+NO_ACTIVE_AGENTS
+\end{lstlisting}
+\vspace{2mm}
+\textcolor{muted}{When context is insufficient, Answer may provide a non-final step instead.}
+\end{columns}
+\vspace{-1mm}
+\observation{Fallback may postpone, rather than eliminate, a deadlock: activation does not guarantee submission.}
+\source{EoM researchworld/agent.py and prompts.py. E1 continuation shows Answer $\to$ no-active, but does not prove fallback woke Answer.}
+\end{frame}
+
 % 5. Output 5
-\begin{frame}[fragile]{05 \quad Counterfactual 1: force Deriver once}
+\begin{frame}[fragile]{06 \quad Counterfactual 1: force Deriver once}
 \small\textcolor{muted}{Restore Episode 1 / Trial 1 immediately before Step 3, and override only Deriver's first NO.}
 \begin{lstlisting}
 Original:
@@ -139,7 +181,7 @@ Result:
 \end{frame}
 
 % 6. Fixed-answer prompt: shared instructions
-\begin{frame}[fragile]{06 \quad Fixed Answer: Prompt Template}
+\begin{frame}[fragile]{07 \quad Fixed Answer: Prompt Template}
 \small\textcolor{muted}{The same evaluator prompt is used for Empty, Base, and Treated states (12,000-token output cap).}
 \begin{lstlisting}[basicstyle=\ttfamily\fontsize{8.0}{9.6}\selectfont]
 You are producing a final answer to a multi-part scientific reasoning problem.
@@ -162,7 +204,7 @@ END_OF_SOLUTION
 \end{frame}
 
 % 7. Fixed-answer prompt: mode-dependent instructions
-\begin{frame}[fragile]{07 \quad Fixed Answer: Full vs. Notes-Only}
+\begin{frame}[fragile]{08 \quad Fixed Answer: Full vs. Notes-Only}
 \small\textcolor{muted}{Exactly one of these instructions replaces \texttt{\{mode\_rule\}} in the shared prompt.}
 \par\vspace{3mm}
 \textbf{Full mode}
@@ -180,7 +222,7 @@ END_OF_SOLUTION
 \end{frame}
 
 % 8. Output 6
-\begin{frame}[fragile]{08 \quad Counterfactual 2: score partial progress}
+\begin{frame}[fragile]{09 \quad Counterfactual 2: score partial progress}
 \small\textcolor{muted}{Instead of waiting for natural termination, ask the same fixed Answer evaluator to submit from three states.}
 \vspace{3mm}
 \centering
@@ -203,7 +245,7 @@ Bootstrap interval       = [-0.0002, +0.1326]
 \end{frame}
 
 % 9. Output 7
-\begin{frame}[fragile]{09 \quad Direct submission from six historical deadlocks}
+\begin{frame}[fragile]{10 \quad Direct submission from six historical deadlocks}
 \small\textcolor{muted}{Force Answer immediately: fixed long-form evaluator versus EoM's native Answer.}
 \vspace{2mm}
 \centering
@@ -226,7 +268,7 @@ E5 / Trial 1 & 0.739 & \textbf{0.818} & \textbf{3/3}\\
 \end{frame}
 
 % 10. Output 8
-\begin{frame}[fragile]{10 \quad Repeated rescue on GaAs: more actions, not better scores}
+\begin{frame}[fragile]{11 \quad Repeated rescue on GaAs: more actions, not better scores}
 \small\textcolor{muted}{Each time the agents all abstain, force an eligible Deriver; otherwise keep native wakeup/action rules.}
 \begin{columns}[T,totalwidth=\textwidth]
 \column{0.51\textwidth}
