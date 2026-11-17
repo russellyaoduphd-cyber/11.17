@@ -267,8 +267,89 @@ E5 / Trial 1 & 0.739 & \textbf{0.818} & \textbf{3/3}\\
 \source{Two-step validation, Step 2; 3 answers per condition and deadlock. Fixed and native differ in prompt and token budget.}
 \end{frame}
 
-% 10. Output 8
-\begin{frame}[fragile]{11 \quad Repeated rescue on GaAs: more actions, not better scores}
+% 10. Task 4 context
+\begin{frame}[fragile]{11 \quad Task 4: GaAs Solar-Cell Fabrication}
+\scriptsize\textcolor{muted}{Original question and rubric excerpts from researchworld training task 4.}
+\vspace{1mm}
+\begin{columns}[T,totalwidth=\textwidth]
+\column{0.49\textwidth}
+\textbf{Original question (abridged)}
+\begin{lstlisting}[basicstyle=\ttfamily\fontsize{7.0}{8.3}\selectfont]
+Define a sequence necessary to fabricate
+a high performance solar cell, not purchased.
+
+Discuss the n-type and p-type GaAs layer:
+(a) The material deposited, removed,
+    or modified
+(b) The method used for deposition,
+    removal, or modification
+(c) The reason behind its position
+    in the fabrication sequence
+
+Give method options when possible.
+\end{lstlisting}
+\column{0.49\textwidth}
+\textbf{Rubric: representative requirements}
+\begin{lstlisting}[basicstyle=\ttfamily\fontsize{7.0}{8.3}\selectfont]
+- Native oxide etch: HCl:DI = 1:10
+- Front-contact lithography:
+  four photoresist process options
+- Mesa lithography AND mesa etching
+- p-type contact: Ti/Au or Cr/Au;
+  thermal or e-beam deposition
+- Rear-surface metallization
+- ARC lithography AND deposition
+\end{lstlisting}
+\end{columns}
+\vspace{1mm}
+\begin{center}
+\begin{tabular}{lcc}
+\toprule
+Deadlock & Fixed (12k) & Native (1.2k)\\
+\midrule
+E4/T1 & 0.312 & 0.182\\
+E4/T2 & 0.334 & 0.091\\
+\bottomrule
+\end{tabular}
+\end{center}
+\observation{Unlike a short Q\&A task, E4 requires a detailed, ordered protocol with exact options. Both evaluators scored poorly: missing process details or misdirected reasoning may matter beyond truncation. Native outputs had truncation risk.}
+\source{Official EoM research_train.jsonl, row 4 (abridged); fixed/native forced-submission results, 3 samples per condition.}
+\end{frame}
+
+% 11. Task 5 context
+\begin{frame}[fragile]{12 \quad Task 5: Five What-If Questions}
+\scriptsize\textcolor{muted}{Original question (shortened for display), after a supplied polymeric FTC prodrug synthesis protocol.}
+\vspace{1mm}
+\begin{lstlisting}[basicstyle=\ttfamily\fontsize{7.2}{8.7}\selectfont]
+1. What if PLS is not first converted to its free acid form?
+2. What if 1k rather than 10k molecular-weight-cutoff dialysis tubing is used?
+3. What if dialysis uses water rather than sodium acetate buffer?
+4. What if pH inside the dialysis bag is adjusted to 6.5-7?
+5. How does biodistribution differ for 10% vs 100% drug conjugation?
+Explain each answer.
+\end{lstlisting}
+\vspace{2mm}
+\begin{columns}[T,totalwidth=\textwidth]
+\column{0.49\textwidth}
+\textbf{Intuition}\\[1mm]
+A complete procedure is already provided; the task asks for five mostly self-contained explanations of local changes. Each answer can be relatively short.
+\column{0.49\textwidth}
+\textbf{Observed direct-submission results}\\[1mm]
+\begin{tabular}{lcc}
+\toprule
+ & Fixed (12k) & Native (1.2k)\\
+\midrule
+Mean score & 0.739 & \textbf{0.818}\\
+\bottomrule
+\end{tabular}\\[1mm]
+Native final answers complete: \textbf{3/3}.
+\end{columns}
+\observation{Native scored slightly higher, but the 0.079 gap is not established with only three samples per arm. A plausible explanation for its competitive performance is that shorter, separable answers fit the 1.2k-token limit; prompt differences and sampling noise remain alternatives.}
+\source{Official EoM research_train.jsonl, row 5 (questions abbreviated); fixed/native forced-submission results, E5/T1.}
+\end{frame}
+
+% 12. Output 8
+\begin{frame}[fragile]{13 \quad Repeated rescue on GaAs: more actions, not better scores}
 \small\textcolor{muted}{Each time the agents all abstain, force an eligible Deriver; otherwise keep native wakeup/action rules.}
 \begin{columns}[T,totalwidth=\textwidth]
 \column{0.51\textwidth}
