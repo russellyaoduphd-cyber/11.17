@@ -138,8 +138,49 @@ Result:
 \source{Counterfactual inaction audit, Episode 1 Trial 1, forced Deriver continuation.}
 \end{frame}
 
-% 6. Output 6
-\begin{frame}[fragile]{06 \quad Counterfactual 2: score partial progress}
+% 6. Fixed-answer prompt: shared instructions
+\begin{frame}[fragile]{06 \quad Fixed Answer: Prompt Template}
+\small\textcolor{muted}{The same evaluator prompt is used for Empty, Base, and Treated states (12,000-token output cap).}
+\begin{lstlisting}[basicstyle=\ttfamily\fontsize{8.0}{9.6}\selectfont]
+You are producing a final answer to a multi-part scientific reasoning problem.
+
+{state}
+
+INSTRUCTIONS:
+- Answer each sub-question in order. Include essential reasoning, equations, and numerical results.
+- Do not restate the problem or add an introductory recap.
+- Be concise: avoid repeating prior explanations or adding a final summary.
+- Shared notes may contain errors; check what you use.
+{mode_rule}
+- For parts you cannot solve, identify the missing result concisely. Do not refuse the task.
+- Output plain text (no XML tags).
+- After the LAST sub-question, end with a separate final line exactly:
+END_OF_SOLUTION
+\end{lstlisting}
+\vspace{2mm}\small\textcolor{muted}{\texttt{\{state\}}: problem + shared notes; \texttt{\{mode\_rule\}}: Full or Notes-only instruction.}
+\source{Fixed-answer evaluation prompt, used in the counterfactual scoring scripts.}
+\end{frame}
+
+% 7. Fixed-answer prompt: mode-dependent instructions
+\begin{frame}[fragile]{07 \quad Fixed Answer: Full vs. Notes-Only}
+\small\textcolor{muted}{Exactly one of these instructions replaces \texttt{\{mode\_rule\}} in the shared prompt.}
+\par\vspace{3mm}
+\textbf{Full mode}
+\begin{lstlisting}[basicstyle=\ttfamily\fontsize{8.3}{10.4}\selectfont]
+- You MAY derive missing steps yourself; mark uncertain conclusions [UNCERTAIN].
+\end{lstlisting}
+\vspace{6mm}
+\textbf{Notes-only mode}
+\begin{lstlisting}[basicstyle=\ttfamily\fontsize{8.3}{10.4}\selectfont]
+- Use ONLY facts and results explicitly present in shared notes. Do NOT add new derivations. For each missing part write [NOT COVERED BY NOTES].
+\end{lstlisting}
+\vspace{7mm}
+\observation{Both modes use the same model and common prompt. The notes-only constraint is a prompting instruction, not a guaranteed restriction on the model's reasoning.}
+\source{Fixed-answer evaluation prompt, mode-specific instructions.}
+\end{frame}
+
+% 8. Output 6
+\begin{frame}[fragile]{08 \quad Counterfactual 2: score partial progress}
 \small\textcolor{muted}{Instead of waiting for natural termination, ask the same fixed Answer evaluator to submit from three states.}
 \vspace{3mm}
 \centering
@@ -161,8 +202,8 @@ Bootstrap interval       = [-0.0002, +0.1326]
 \source{Two-step validation, Step 1; full mode, 5 answers/arm, 2 judge calls/answer.}
 \end{frame}
 
-% 7. Output 7
-\begin{frame}[fragile]{07 \quad Direct submission from six historical deadlocks}
+% 9. Output 7
+\begin{frame}[fragile]{09 \quad Direct submission from six historical deadlocks}
 \small\textcolor{muted}{Force Answer immediately: fixed long-form evaluator versus EoM's native Answer.}
 \vspace{2mm}
 \centering
@@ -184,8 +225,8 @@ E5 / Trial 1 & 0.739 & \textbf{0.818} & \textbf{3/3}\\
 \source{Two-step validation, Step 2; 3 answers per condition and deadlock. Fixed and native differ in prompt and token budget.}
 \end{frame}
 
-% 8. Output 8
-\begin{frame}[fragile]{08 \quad Repeated rescue on GaAs: more actions, not better scores}
+% 10. Output 8
+\begin{frame}[fragile]{10 \quad Repeated rescue on GaAs: more actions, not better scores}
 \small\textcolor{muted}{Each time the agents all abstain, force an eligible Deriver; otherwise keep native wakeup/action rules.}
 \begin{columns}[T,totalwidth=\textwidth]
 \column{0.51\textwidth}
