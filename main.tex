@@ -1,14 +1,222 @@
-\documentclass{article}
-\usepackage{graphicx} % Required for inserting images
-
-\title{11.17}
-\author{Qining Shen}
-\date{November 2026}
-
+\documentclass[aspectratio=169,10pt]{beamer}
+\usetheme{default}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{tabularx}
+\definecolor{navy}{HTML}{183153}
+\definecolor{blue}{HTML}{3263A8}
+\definecolor{ink}{HTML}{263449}
+\definecolor{muted}{HTML}{65758A}
+\definecolor{panel}{HTML}{F5F8FC}
+\definecolor{line}{HTML}{D9E3ED}
+\definecolor{accent}{HTML}{E8F0FB}
+\setbeamercolor{normal text}{fg=ink,bg=white}
+\setbeamercolor{frametitle}{fg=navy,bg=white}
+\setbeamerfont{frametitle}{size=\Large,series=\bfseries}
+\setbeamercolor{observation}{fg=navy,bg=accent}
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{headline}{}
+\setbeamertemplate{footline}{\hfill\textcolor{muted}{EoM failure audit \quad 17 Nov 2026}\hspace{1.2em}\textcolor{muted}{\insertframenumber/\inserttotalframenumber}\hspace{1.2em}\vspace{4pt}}
+\setbeamersize{text margin left=8mm,text margin right=8mm}
+\setlength{\parskip}{2pt}
+\lstdefinestyle{console}{basicstyle=\ttfamily\fontsize{8.0}{9.3}\selectfont,frame=single,framerule=0.35pt,rulecolor=\color{line},backgroundcolor=\color{panel},showstringspaces=false,columns=fullflexible,keepspaces=true,breaklines=true,aboveskip=5pt,belowskip=5pt,xleftmargin=5pt,xrightmargin=4pt}
+\lstset{style=console}
+\newcommand{\observation}[1]{\vspace{2mm}\begin{beamercolorbox}[rounded=true,sep=1ex,wd=\textwidth]{observation}\small\textbf{Observation:} #1\end{beamercolorbox}}
+\newcommand{\source}[1]{\vfill{\tiny\textcolor{muted}{Source: #1}}}
 \begin{document}
 
-\maketitle
+% 1. Output 1
+\begin{frame}[fragile]{01 \quad A recurring failure: No Active Agents}
+\small\textcolor{muted}{Original five-task Researchworld pilot (training, including bankruptcy replays)}
+\vspace{1mm}
+\centering
+\begin{tabular}{lccc}
+\toprule
+Task & Trials & Final task result & No-active trials\\
+\midrule
+1: Lattice quantum system & 2 & No submitted answer & 2\\
+2: Keap1--Nrf2 & 1 & 1.000 & 0\\
+3: Genexol-PM & 1 & No submitted answer & 1\\
+4: GaAs solar cell & 2 & No submitted answer & 2\\
+5: Prodrug chemistry & 2 & 0.818 & 1\\
+\midrule
+\textbf{Total} & \textbf{8} & & \textbf{6}\\
+\bottomrule
+\end{tabular}
+\par\vspace{2mm}
+\begin{lstlisting}
+Terminations: E1/T1@step3, E1/T2@step2, E3/T1@step9,
+              E4/T1@step5, E4/T2@step3, E5/T1@step7
+\end{lstlisting}
+\observation{Six of eight training trials stopped before a final answer because no agent activated. This is a small configuration-specific pilot, not an estimated general failure rate.}
+\source{Pilot5 training metrics + per-trial termination logs; scores of unsubmitted answers are unavailable (not judge-assigned zeros).}
+\end{frame}
 
-\section{Introduction}
+% 2. Output 2
+\begin{frame}[fragile]{02 \quad Why did no agent wake up?}
+\small\textcolor{muted}{Episode 1, Trial 1: the plan exists, but nobody takes the next step.}
+\begin{lstlisting}
+Step 1 | WINNER: Literature
+Step 2 | WINNER: Planner
+
+Step 3/10 | Wakeup decisions
+  Literature: NO                     [LLM decision]
+  Planner:    not accepted            [same-role gate]
+  Deriver:    NO                     [LLM decision]
+  Verifier:   NO                     [LLM decision]
+  Answer:     NO                     [requires deriver/verifier]
+
+  No active agents! Ending episode.
+\end{lstlisting}
+\observation{An agent's voluntary NO and a hard-coded role restriction both reduce the candidate set \emph{before} bidding begins. The auction cannot select anyone when the set is empty.}
+\source{Pilot5, Episode 1 Trial 1, Steps 1--3, wakeup audit. Excerpt with normalized names and line breaks.}
+\end{frame}
+
+% 3. Output 3
+\begin{frame}[fragile]{03 \quad Failure penalties reach those who acted}
+\small\textcolor{muted}{The same Episode 1 failure triggers the default path-reward update.}
+\begin{lstlisting}
+No active agents! Ending episode.
+Path reward: score=0.00, centered_signal=-1.00
+             -> -0.50 x 2 agents (of 2 actions)
+
+Credit check                  Wealth        Status
+  Literature (id=1)          -$0.10         BANKRUPT
+  Planner    (id=2)          -$0.10         BANKRUPT
+  Deriver    (id=3)           $0.50         solvent
+  Verifier   (id=4)           $0.50         solvent
+  Answer     (id=5)           $0.50         solvent
+
+2 agent(s) went bankrupt.
+\end{lstlisting}
+\observation{The failed trajectory penalizes Literature and Planner, who acted. Deriver's NO at the stopping point receives no explicit path penalty. This is missing inaction attribution, not proof that Deriver deserves all the blame.}
+\source{Pilot5 Episode 1 Trial 1, path-reward and credit-check logs.}
+\end{frame}
+
+% 4. Output 4
+\begin{frame}[fragile]{04 \quad Prompt evolution does not target the wakeup failure}
+\small\textcolor{muted}{Actual offspring prompts after Episode 1; additions below are abbreviated excerpts.}
+\begin{lstlisting}
+BAD_BIRTH: Planner -> Planner-1635
+Prompt changed: True | Wakeup-related keywords: False
+  + Carefully identify and list all sub-parts and their
+    dependencies before planning.
+  + Always verify that the plan fully covers all
+    aspects of the problem.
+
+GOOD_BIRTH: Deriver -> DeriverResearchAgent-4835
+Prompt changed: True | Wakeup-related keywords: False
+  + Before finalizing the step, perform a quick sanity
+    check by verifying consistency with known constraints.
+\end{lstlisting}
+\observation{The new prompts improve planning or reasoning quality, but do not explicitly address the decision to wake up. In this pilot, all 12 births changed prompts; none explicitly mentioned activation repair.}
+\source{Generation-operator audit; parent--child prompt diff, Episode 1 (excerpt).}
+\end{frame}
+
+% 5. Output 5
+\begin{frame}[fragile]{05 \quad Counterfactual 1: force Deriver once}
+\small\textcolor{muted}{Restore Episode 1 / Trial 1 immediately before Step 3, and override only Deriver's first NO.}
+\begin{lstlisting}
+Original:
+  Step 1 Literature -> Step 2 Planner
+  Step 3 NO_ACTIVE_AGENTS -> no submitted answer
+Counterfactual:
+  Step 3 Deriver [FORCED]
+    Part (a): single-particle basis, spin-singlet state
+  Step 4 Answer [normal] -> <step> only
+  Step 5 NO_ACTIVE_AGENTS
+Result:
+  Subsequent roles: deriver -> answer
+  Termination: no_active_agents
+  Score: 0.0                  Submitted: False
+\end{lstlisting}
+\observation{The forced action produced a substantive derivation, yet a downstream activation failure prevented submission. Terminal reward alone does not reveal whether that derivation helped.}
+\source{Counterfactual inaction audit, Episode 1 Trial 1, forced Deriver continuation.}
+\end{frame}
+
+% 6. Output 6
+\begin{frame}[fragile]{06 \quad Counterfactual 2: score partial progress}
+\small\textcolor{muted}{Instead of waiting for natural termination, ask the same fixed Answer evaluator to submit from three states.}
+\vspace{3mm}
+\centering
+\begin{tabular}{lcc}
+\toprule
+Forced-answer input & Mean rubric score & Samples\\
+\midrule
+\textbf{Empty}: original problem only & 0.9084 & 5\\
+\textbf{Base}: + Literature + Planner notes & 0.8630 & 5\\
+\textbf{Treated}: + Deriver's Part (a) & 0.9224 & 5\\
+\bottomrule
+\end{tabular}
+\par\vspace{5mm}
+\begin{lstlisting}
+Delta (Treated - Base) = +0.0594
+Bootstrap interval       = [-0.0002, +0.1326]
+\end{lstlisting}
+\observation{The estimated Deriver gain is uncertain (interval includes zero). More strikingly, an Answer model with no agent notes already scores 0.9084. This evaluator has a 12k-token output cap; it is not native EoM.}
+\source{Two-step validation, Step 1; full mode, 5 answers/arm, 2 judge calls/answer.}
+\end{frame}
+
+% 7. Output 7
+\begin{frame}[fragile]{07 \quad Direct submission from six historical deadlocks}
+\small\textcolor{muted}{Force Answer immediately: fixed long-form evaluator versus EoM's native Answer.}
+\vspace{2mm}
+\centering
+\begin{tabular}{lccc}
+\toprule
+Historical deadlock & Fixed (12k cap) & Native (1.2k cap) & Native passes\\
+\midrule
+E1 / Trial 1 & 0.912 & 0.517 & 1/3\\
+E1 / Trial 2 & 0.912 & 0.537 & 1/3\\
+E3 / Trial 1 & 0.697 & 0.576 & 2/3\\
+E4 / Trial 1 & 0.312 & 0.182 & 0/3\\
+E4 / Trial 2 & 0.334 & 0.091 & 0/3\\
+E5 / Trial 1 & 0.739 & \textbf{0.818} & \textbf{3/3}\\
+\midrule
+\textbf{Mean} & \textbf{0.651} & \textbf{0.453} & \\[-1ex]
+\bottomrule
+\end{tabular}
+\observation{Some deadlocked states could yield useful submissions (notably E5/T1). Others could not (E4). Caveat: 12/18 native responses had unclosed final-answer tags / truncation risk.}
+\source{Two-step validation, Step 2; 3 answers per condition and deadlock. Fixed and native differ in prompt and token budget.}
+\end{frame}
+
+% 8. Output 8
+\begin{frame}[fragile]{08 \quad Repeated rescue on GaAs: more actions, not better scores}
+\small\textcolor{muted}{Each time the agents all abstain, force an eligible Deriver; otherwise keep native wakeup/action rules.}
+\begin{columns}[T,totalwidth=\textwidth]
+\column{0.51\textwidth}
+\begin{lstlisting}
+E4 / Trial 1 continuation
+  Step 5 Deriver [FORCED]
+    Part (d): optimal layer thickness...
+  Step 6 Answer [normal]
+    Part (d): layer thickness...
+  Step 7 Deriver [FORCED]
+    Part (d) continued...
+  Step 8 Answer [normal]
+  Step 9 Deriver [FORCED]
+    Part (d) thickness...
+\end{lstlisting}
+\column{0.47\textwidth}
+\vspace{1mm}
+\begin{tabular}{lcc}
+\toprule
+ & E4/T1 & E4/T2\\
+\midrule
+Rollouts & 3 & 3\\
+Mean engine score & 0.000 & 0.303\\
+Mean forced wakes & 3.00 & 2.33\\
+Scores $\geq0.7$ & 0/3 & 0/3\\
+Complete finals & 0/3 & 1/3\\
+\bottomrule
+\end{tabular}
+\end{columns}
+\observation{No rollout reached 0.7. Trial 1 repeatedly pursued a ``Part (d)'' absent from the original (a)--(c) question. Five of six final outputs were incomplete, limiting performance conclusions.}
+\source{Episode 4 repeated-rescue output; 3 rollouts/trial, deriver-first rescue policy.}
+\end{frame}
 
 \end{document}
